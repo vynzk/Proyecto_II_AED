@@ -3,6 +3,7 @@ title: "Proyecto II Análisis exploratorio"
 author: "Valentina Yañez"
 date: "2025-06-22"
 output:
+  pdf_document: default
   html_document:
     df_print: paged
 ---
@@ -16,8 +17,6 @@ knitr::opts_chunk$set(echo = TRUE)
 Aplicar técnicas de análisis exploratorio de datos utilizando la librería ggplot2 en R para explorar visualmente las características de la base de datos Wisconsin Breast Cancer Dataset, identificar patrones, relaciones y posibles agrupaciones dentro de los datos.
 
 # Carga y revisión inicial de los datos
-
-## Carga y revisión inicial de los datos
 
 -   Leer la base de datos en R
 -   Revisar estructura(str()), dimesiones(dim()), y valores faltantes (summary(), anyNA()).
@@ -80,6 +79,7 @@ ggplot(data, aes(x = diagnosis)) +
   labs(title = "Distribución de Diagnosis", x = "Tipo", y = "Cantidad")
 
 ```
+
 ```{r}
 #install.packages(c("ggplot2", "FactoMineR", "factoextra", "dplyr"))
 library(ggplot2)
@@ -112,8 +112,6 @@ fviz_contrib(pca_result, choice = "var", axes = 1, top = 10) +
 
 
 ```
-
-
 
 ```{r}
 # Histogramas de variables numéricas
@@ -221,7 +219,6 @@ corr_matrix <- cor(numeric_data)
 corrplot(corr_matrix, method = "color", type = "lower", tl.cex = 0.6)
 ```
 
-
 ## Gráficos avanzado
 
 -   Crear violin plots o density plots para comparar las distribuciones según diagnóstico.
@@ -259,5 +256,3 @@ ggplot(long_data, aes(x = valor, fill = diagnosis)) +
 ```
 
 # Conclusiones
-
-
