@@ -1,0 +1,263 @@
+---
+title: "Proyecto II Análisis exploratorio"
+author: "Valentina Yañez"
+date: "2025-06-22"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Objetivo General
+
+Aplicar técnicas de análisis exploratorio de datos utilizando la librería ggplot2 en R para explorar visualmente las características de la base de datos Wisconsin Breast Cancer Dataset, identificar patrones, relaciones y posibles agrupaciones dentro de los datos.
+
+# Carga y revisión inicial de los datos
+
+## Carga y revisión inicial de los datos
+
+-   Leer la base de datos en R
+-   Revisar estructura(str()), dimesiones(dim()), y valores faltantes (summary(), anyNA()).
+
+```{r}
+# cargar librerias necesarias
+
+# cargar los datos (ubicada en ./data/wdbc.data)
+data <- read.csv("./data/wdbc.data", header = FALSE)
+
+```
+
+```{r}
+# generar encabezado de los datos
+# Atributos base
+features <- c("radius", "texture", "perimeter", "area", "smoothness",
+              "compactness", "concavity", "concave_points", "symmetry", "fractal_dimension")
+
+# Generar nombres por bloques
+mean_names <- paste(features, "mean", sep = "_")
+se_names <- paste(features, "se", sep = "_")
+worst_names <- paste(features, "worst", sep = "_")
+
+# Todos los nombres completos
+column_names <- c("id", "diagnosis", mean_names, se_names, worst_names)
+
+# Asignar nombres a las columnas
+colnames(data) <- column_names
+
+# Revisar la estructura de los datos
+str(data)
+```
+
+```{r}
+
+# revisar dimensiones
+dim(data)
+# revisar valores faltantes
+summary(data)
+
+
+```
+
+## Análisis univariado con ggplot2
+
+-   Generar histogramas y boxplots de al menos 4 variables numéricas.
+
+-   Generar gráfico de barras para la variable categórica diagnosis.
+
+-   Comentar la distribución de las variables.
+
+```{r}
+
+#install.packages("ggplot2")
+
+# graficar diagnosis
+library(ggplot2)
+ggplot(data, aes(x = diagnosis)) +
+  geom_bar(fill = c("#FF6666", "#66CC99")) +
+  labs(title = "Distribución de Diagnosis", x = "Tipo", y = "Cantidad")
+
+```
+```{r}
+#install.packages(c("ggplot2", "FactoMineR", "factoextra", "dplyr"))
+library(ggplot2)
+library(FactoMineR)
+library(factoextra)
+library(dplyr)
+
+
+# Convertir diagnosis a factor
+data$diagnosis <- as.factor(data$diagnosis)
+
+# Seleccionar solo variables numéricas
+data_numeric <- data[, 3:ncol(data)]  # Quita id y diagnosis
+
+# Ejecutar PCA
+pca_result <- PCA(data_numeric, graph = FALSE)
+
+# Visualización con color por diagnóstico
+fviz_pca_ind(pca_result,
+             geom.ind = "point",
+             col.ind = data$diagnosis,
+             palette = c("#00AFBB", "#FC4E07"),
+             addEllipses = TRUE,
+             legend.title = "Diagnóstico") +
+  ggtitle("PCA de Tumores de Mama (2 primeros componentes)")
+
+# Ver cómo contribuye cada variable al primer componente
+fviz_contrib(pca_result, choice = "var", axes = 1, top = 10) +
+  ggtitle("Contribución al Componente Principal 1")
+
+
+```
+
+
+
+```{r}
+# Histogramas de variables numéricas
+
+#install.packages("patchwork") 
+library(ggplot2)
+library(patchwork)
+
+features <- c("radius_mean", "area_mean", "concavity_mean", "compactness_mean", "concave_points_mean", "perimeter_mean", "area_mean")
+
+plots <- list()
+
+for (f in features) {
+  plots[[f]] <- ggplot(data, aes(x = .data[[f]])) +
+    geom_histogram(bins = 30, fill = "#69b3a2", color = "white") +
+    labs(title = paste("Histograma de", f)) +
+    theme_minimal()
+}
+
+# Combinar todos los gráficos
+wrap_plots(plots, ncol = 2)  # 2 columnas
+
+
+```
+
+```{r}
+
+# Boxplots de variables numéricas por diagnóstico
+ggplot(data, aes(x = diagnosis, y = radius_mean, fill = diagnosis)) +
+  geom_boxplot(alpha = 0.7) +
+  labs(title = "Distribución de radius_mean según diagnóstico",
+       x = "Diagnóstico", y = "Radio promedio") +
+  theme_minimal()
+
+ggplot(data, aes(x = diagnosis, y = area_mean, fill = diagnosis)) +
+  geom_boxplot(alpha = 0.7) +
+  labs(title = "Distribución de area_mean según diagnóstico",
+       x = "Diagnóstico", y = "Área promedio") +
+  theme_minimal()
+
+ggplot(data, aes(x = diagnosis, y = concavity_mean, fill = diagnosis)) +
+  geom_boxplot(alpha = 0.7) +
+  labs(title = "Distribución de concavity_mean según diagnóstico",
+       x = "Diagnóstico", y = "Concavidad promedio") +
+  theme_minimal()
+
+ggplot(data, aes(x = diagnosis, y = compactness_mean, fill = diagnosis)) +
+  geom_boxplot(alpha = 0.7) +
+  labs(title = "Distribución de compactness_mean según diagnóstico",
+       x = "Diagnóstico", y = "Compacidad promedio") +
+  theme_minimal()
+
+
+```
+
+### Análisis de histogramas
+
+La variable radius_mean, que representa el radio promedio del tumor, mostró una distribución asimétrica a la derecha. La mayoría de los valores se concentran entre 10 y 15 unidades, lo que sugiere que la mayor parte de los tumores analizados tienen un tamaño moderado. Sin embargo, se observan algunos valores más altos, cercanos a 25, que podrían estar asociados a tumores de mayor tamaño y, posiblemente, de carácter maligno.
+
+area_mean mide el área promedio del tumor, presentó una distribución similar, pero con una gran concentración de valores por debajo de las 1000 unidades mas o menos, tiene amplia dispersión, lo que refuerza su importancia como atributo diferenciador, aunque también sugiere la necesidad de normalización.
+
+concavity_mean describe el grado de concavidad de los bordes del tumor, tiene alta concentración de valores próximos a cero. Común en tumores benignos al parecer. Un subconjunto más reducido presenta valores más altos, lo que reflejaría la morfología más irregular asociada a tumores malignos.
+
+Y en final compactness_mean también tiene una distribución sesgada de forma positiva, con la mayoría de los datos situados entre 0.05 y 0.15. Este comportamiento sugiere que la mayoría de los tumores son relativamente compactos en su forma, aunque también existen algunos casos más dispersos o irregulares.
+
+## Análisis bivariado
+
+-   Crear diagramas de dispersión (scatter plots) entre pares de variables, diferenciando por diagnóstico (usando color = diagnosis).
+-   Evaluar la posible correlación entre algunas variables.
+
+```{r}
+library(ggplot2)
+
+ggplot(data, aes(x = radius_mean, y = area_mean, color = diagnosis)) +
+  geom_point(alpha = 0.6) +
+  labs(title = "Radio vs Área según diagnóstico") +
+  theme_minimal()
+
+ggplot(data, aes(x = concavity_mean, y = compactness_mean, color = diagnosis)) +
+  geom_point(alpha = 0.6) +
+  labs(title = "Concavidad vs Compacidad según diagnóstico") +
+  theme_minimal()
+
+```
+
+## Matrices de correlación
+
+-   Calcular la matriz de correlaci´on.
+-   Visualizarla con corrplot o ggcorrplot.
+-   Identificar las variables m´as correlacionadas.
+
+```{r}
+cor(data$radius_mean, data$area_mean)
+cor(data$concavity_mean, data$compactness_mean)
+```
+
+```{r}
+#install.packages("corrplot")
+library(corrplot)
+
+# Eliminar columnas no numéricas
+numeric_data <- data[sapply(data, is.numeric)]
+corr_matrix <- cor(numeric_data)
+
+corrplot(corr_matrix, method = "color", type = "lower", tl.cex = 0.6)
+```
+
+
+## Gráficos avanzado
+
+-   Crear violin plots o density plots para comparar las distribuciones según diagnóstico.
+-   Utilizar gráficos facetados para explorar más de una variable simultáneamente.
+
+```{r}
+library(ggplot2)
+
+ggplot(data, aes(x = diagnosis, y = radius_mean, fill = diagnosis)) +
+  geom_violin(trim = FALSE, alpha = 0.6) +
+  labs(title = "Distribución de Radius Mean según diagnóstico") +
+  theme_minimal()
+
+ggplot(data, aes(x = radius_mean, color = diagnosis, fill = diagnosis)) +
+  geom_density(alpha = 0.3) +
+  labs(title = "Density plot de Radius Mean por diagnóstico") +
+  theme_minimal()
+
+# Variables de interés
+vars <- c("radius_mean", "area_mean", "concavity_mean", "compactness_mean")
+
+# Reorganizar el dataframe a formato largo (long format)
+#install.packages("tidyr")
+library(tidyr)
+long_data <- pivot_longer(data, cols = all_of(vars), names_to = "variable", values_to = "valor")
+
+# Density plot facetado
+ggplot(long_data, aes(x = valor, fill = diagnosis)) +
+  geom_density(alpha = 0.3) +
+  facet_wrap(~variable, scales = "free") +
+  labs(title = "Distribuciones por variable y diagnóstico") +
+  theme_minimal()
+
+
+```
+
+# Conclusiones
+
+
